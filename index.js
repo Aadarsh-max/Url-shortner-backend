@@ -11,9 +11,13 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ✅ Flexible CORS configuration
 app.use(
   cors({
-    origin: "https://url-shortner-frontend-phi.vercel.app/", 
+    origin: [
+      "https://url-shortner-frontend-phi.vercel.app", 
+      "http://localhost:3000", 
+    ],
     methods: ["GET", "POST"],
     credentials: true,
   })
@@ -35,13 +39,7 @@ app.post("/api/short", async (req, res) => {
       const myUrl = `${req.protocol}://${req.get("host")}/${existingUrl.shortUrl}`;
       const qrCodeImg = await QRCode.toDataURL(existingUrl.originalUrl);
 
-      console.log(
-        "Using existing short URL:",
-        myUrl,
-        "for original URL:",
-        originalUrl
-      );
-
+      console.log("Using existing short URL:", myUrl);
       return res.status(200).json({
         message: "URL already exists",
         myUrl,
@@ -52,18 +50,10 @@ app.post("/api/short", async (req, res) => {
     }
 
     const shortUrl = nanoid(8);
-
     const myUrl = `${req.protocol}://${req.get("host")}/${shortUrl}`;
     const qrCodeImg = await QRCode.toDataURL(originalUrl);
 
-    console.log("Created new short URL:", myUrl, "for original URL:", originalUrl);
-
-    const url = new urlModel({
-      originalUrl,
-      shortUrl,
-      clicks: 0,
-    });
-
+    const url = new urlModel({ originalUrl, shortUrl, clicks: 0 });
     await url.save();
 
     return res.status(200).json({
@@ -86,7 +76,6 @@ app.get("/:shortUrl", async (req, res) => {
 
     if (url) {
       url.clicks++;
-
       await url.save();
 
       let redirectUrl = url.originalUrl;
